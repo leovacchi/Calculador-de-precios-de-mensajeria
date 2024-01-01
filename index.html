@@ -18,7 +18,7 @@
     </div>
     <input type="text" id="direccionInput1" placeholder="Ingresa la primera dirección...">
     <input type="text" id="direccionInput2" placeholder="Ingresa la segunda dirección...">
-    <div id="map" style="height: 400px;"></div>
+    <div id="map" style="height: 300px;"></div>
     <p id="precioCalculado"></p>
 
     <script>
@@ -80,11 +80,22 @@
 
                         // Escucha el evento de cambio de ruta para recalcular el precio
                         routingControl.on('routeselected', function(e) {
+                                               // Elimina los marcadores anteriores a la nueva ruta si existen
+                    if (marker1) {
+                        map.removeLayer(marker1);
+                    }
+                    if (marker2) {
+                        map.removeLayer(marker2);
+                    }
                             var distancia = e.route.summary.totalDistance / 1000; // en kilómetros
                             var precio = calcularPrecio(distancia);
                             precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
                             console.log('Ruta seleccionada, recalculando precio');
+                            
+                            
                         });
+
+                        
 
                         // Ajusta la vista del mapa para mostrar ambas direcciones y la ruta
                         var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
