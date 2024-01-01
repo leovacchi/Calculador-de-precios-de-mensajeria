@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Autocompletado de Direcciones</title>
+   
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
@@ -25,9 +26,15 @@
                 map.setView(e.geocode.center, 15);
             }).addTo(map);
 
+            // Actualiza la lógica para escuchar los eventos de cambio en el input
             var input = document.getElementById('direccionInput');
             input.addEventListener('input', function() {
-                searchControl.geocode(input.value);
+                // Utiliza la función geocode del control para buscar la dirección
+                searchControl.options.geocode(input.value, function(results) {
+                    if (results.length > 0) {
+                        map.setView(results[0].center, 15);
+                    }
+                });
             });
         });
     </script>
