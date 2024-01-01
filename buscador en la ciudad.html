@@ -28,6 +28,7 @@
 
             var input1 = document.getElementById('direccionInput1');
             var input2 = document.getElementById('direccionInput2');
+            
             var ubicacionActualBtn = document.getElementById('ubicacionActualBtn');
             var ubicacionActualInfo = document.getElementById('ubicacionActualInfo');
             var ubicacionActualTexto = document.getElementById('ubicacionActualTexto');
@@ -48,14 +49,14 @@
             }
 
             function updateRoute() {
-                var direccion1 = input1.value;
-                var direccion2 = input2.value;
+                var direccion1 = encodeURIComponent(input1.value);
+                var direccion2 = encodeURIComponent(input2.value);
 
                 // Realiza la geocodificación utilizando la API de Nominatim para ambas direcciones
                 Promise.all([
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
-                ]).then(data => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion1)}&city=Bahia%20Blanca&country=Argentina`).then(response => response.json()),
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion2)}&city=Bahia%20Blanca&country=Argentina`).then(response => response.json())
+              ]).then(data => {
                     var result1 = data[0][0];
                     var result2 = data[1][0];
 
@@ -67,7 +68,6 @@
                         // Añade la capa de enrutamiento
                         if (routingControl) {
                             map.removeControl(routingControl);
-                            console.log('moves el marcador');
                         }
 
                         routingControl = L.Routing.control({
@@ -77,14 +77,6 @@
                             ],
                             routeWhileDragging: true
                         }).addTo(map);
-
-                        // Escucha el evento de cambio de ruta para recalcular el precio
-                        routingControl.on('routeselected', function(e) {
-                            var distancia = e.route.summary.totalDistance / 1000; // en kilómetros
-                            var precio = calcularPrecio(distancia);
-                            precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
-                            console.log('Ruta seleccionada, recalculando precio');
-                        });
 
                         // Ajusta la vista del mapa para mostrar ambas direcciones y la ruta
                         var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
@@ -123,6 +115,11 @@
                 }, function(error) {
                     console.error('Error al obtener la ubicación actual:', error);
                 });
+            });
+
+            // Escucha el evento de cambio de puntos de ruta para recalcular el precio
+            map.on('waypointschanged', function() {
+                updateRoute();
             });
         });
     </script>

@@ -19,7 +19,6 @@
     <input type="text" id="direccionInput1" placeholder="Ingresa la primera dirección...">
     <input type="text" id="direccionInput2" placeholder="Ingresa la segunda dirección...">
     <div id="map" style="height: 400px;"></div>
-    <p id="precioCalculado"></p>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -31,20 +30,10 @@
             var ubicacionActualBtn = document.getElementById('ubicacionActualBtn');
             var ubicacionActualInfo = document.getElementById('ubicacionActualInfo');
             var ubicacionActualTexto = document.getElementById('ubicacionActualTexto');
-            var precioCalculado = document.getElementById('precioCalculado');
             var routingControl;
 
             function addMarker(lat, lon) {
                 return L.marker([lat, lon]).addTo(map);
-            }
-
-            function calcularPrecio(distancia) {
-                // Cada 2 kilómetros cobra $1000 como mínimo
-                var precioMinimo = 1000;
-                // Precio proporcional por kilómetro
-                var precioProporcional = Math.max(0, (distancia - 2) * 500); // Asume $500 por kilómetro adicional
-
-                return precioMinimo + precioProporcional;
             }
 
             function updateRoute() {
@@ -67,7 +56,6 @@
                         // Añade la capa de enrutamiento
                         if (routingControl) {
                             map.removeControl(routingControl);
-                            console.log('moves el marcador');
                         }
 
                         routingControl = L.Routing.control({
@@ -78,26 +66,9 @@
                             routeWhileDragging: true
                         }).addTo(map);
 
-                        // Escucha el evento de cambio de ruta para recalcular el precio
-                        routingControl.on('routeselected', function(e) {
-                            var distancia = e.route.summary.totalDistance / 1000; // en kilómetros
-                            var precio = calcularPrecio(distancia);
-                            precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
-                            console.log('Ruta seleccionada, recalculando precio');
-                        });
-
                         // Ajusta la vista del mapa para mostrar ambas direcciones y la ruta
                         var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
                         map.fitBounds(bounds);
-
-                        // Calcula la distancia entre las dos direcciones
-                        var distancia = marker1.getLatLng().distanceTo(marker2.getLatLng()) / 1000; // en kilómetros
-
-                        // Calcula el precio basado en la distancia
-                        var precio = calcularPrecio(distancia);
-
-                        // Muestra el precio calculado
-                        precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
                     } else {
                         console.error('No se encontraron resultados de geocodificación para ambas direcciones.');
                     }
