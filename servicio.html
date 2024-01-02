@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta desde Enlace</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <style>
+        #map {
+            height: 400px;
+        }
+        #info {
+            margin-top: 10px;
+        }
+        #delivery-info {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ruta desde Enlace</h1>
+    <div id="map"></div>
+    <div id="info"></div>
+    <div id="delivery-info"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Leer parámetros del enlace
+            var urlParams = new URLSearchParams(window.location.search);
+            var lat1 = parseFloat(urlParams.get('lat1'));
+            var lon1 = parseFloat(urlParams.get('lon1'));
+            var lat2 = parseFloat(urlParams.get('lat2'));
+            var lon2 = parseFloat(urlParams.get('lon2'));
+            var distancia = parseFloat(urlParams.get('distancia'));
+            var precio = parseFloat(urlParams.get('precio'));
+            var direccionInicio = urlParams.get('direccionInicio');
+            var direccionEntrega = urlParams.get('direccionEntrega');
+
+            // Crear el mapa
+            var map = L.map('map').setView([(lat1 + lat2) / 2, (lon1 + lon2) / 2], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            // Añadir marcadores no arrastrables
+            var marker1 = L.marker([lat1, lon1], { draggable: false }).addTo(map);
+            var marker2 = L.marker([lat2, lon2], { draggable: false }).addTo(map);
+
+            // Crear objeto de control de ruta
+            var control = L.Routing.control({
+                waypoints: [
+                    L.latLng(lat1, lon1),
+                    L.latLng(lat2, lon2)
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
+
+            // Mostrar información de distancia y precio
+            var infoDiv = document.getElementById('info');
+            infoDiv.innerHTML = `Distancia: ${distancia.toFixed(2)} km | Precio: $${precio.toFixed(2)}`;
+
+            // Mostrar direcciones de inicio y entrega
+            var deliveryInfoDiv = document.getElementById('delivery-info');
+            deliveryInfoDiv.innerHTML = `Inicio: ${direccionInicio} | Entrega: ${direccionEntrega}`;
+
+            // Escuchar eventos de cambio en la ruta
+            control.on('routesfound', function(e) {
+                // Mostrar la distancia de la nueva ruta
+                var nuevaDistancia = e.routes[0].summary.totalDistance / 1000;
+                infoDiv.innerHTML = `Distancia: ${nuevaDistancia.toFixed(2)} km | Precio: $${precio.toFixed(2)}`;
+            });
+        });
+    </script>
+</body>
+</html>

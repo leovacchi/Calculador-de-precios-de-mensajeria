@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta entre Direcciones</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+</head>
+<body>
+    <h1>Ruta entre Direcciones</h1>
+    <button id="ubicacionActualBtn">Usar mi ubicación actual como inicio</button>
+    <div id="ubicacionActualInfo" style="display:none;">
+        <p>Ubicación actual:</p>
+        <p id="ubicacionActualTexto"></p>
+    </div>
+    <input type="text" id="direccionInput1" placeholder="Ingresa la primera dirección...">
+    <input type="text" id="direccionInput2" placeholder="Ingresa la segunda dirección...">
+    <div id="map" style="height: 300px;"></div>
+    <p id="precioCalculado"></p>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('map').setView([0, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            var input1 = document.getElementById('direccionInput1');
+            var input2 = document.getElementById('direccionInput2');
+            var ubicacionActualBtn = document.getElementById('ubicacionActualBtn');
+            var ubicacionActualInfo = document.getElementById('ubicacionActualInfo');
+            var ubicacionActualTexto = document.getElementById('ubicacionActualTexto');
+            var precioCalculado = document.getElementById('precioCalculado');
+            var routingControl;
+            var marker1, marker2;
+
+            function addMarker(lat, lon, draggable = false) {
+                return L.marker([lat, lon], { draggable: draggable }).addTo(map);
+            }
+
+            function calcularPrecio(distancia) {
+                var precioMinimo = 1000;
+                var precioProporcional = Math.max(0, (distancia - 3) * 500);
+                return precioMinimo + precioProporcional;
+            }
+            function updateRoute() {
+    var direccion1 = input1.value;
+    var direccion2 = input2.value;
+
+    Promise.all([
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
+    ]).then(data => {
+        var result1 = data[0][0];
+        var result2 = data[1][0];
+
+        if (result1 && result2) {
+            if (marker1) {
+                map.removeLayer(marker1);
+            }
+            if (marker2) {
+                map.removeLayer(marker2);
+            }
+
+            marker1 = addMarker(result1.lat, result1.lon, true);
+            marker2 = addMarker(result2.lat, result2.lon, true);
+
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(result1.lat, result1.lon),
+                    L.latLng(result2.lat, result2.lon)
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
+
+            routingControl.on('routeselected', function(e) {
+                if (marker1) {
+                    map.removeLayer(marker1);
+                }
+                if (marker2) {
+                    map.removeLayer(marker2);
+                }
+                var distancia = e.route.summary.totalDistance / 1000;
+                var precio = calcularPrecio(distancia);
+
+                precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km | Precio calculado: $${precio.toFixed(2)}`;
+                // Crear enlace con parámetros codificados
+                var enlace = `${window.location.href}?lat1=${result1.lat}&lon1=${result1.lon}&lat2=${result2.lat}&lon2=${result2.lon}&distancia=${distancia}&precio=${precio}`;
+                console.log('Enlace para compartir:', enlace);
+                console.log("Direccion de Inicio:", input1.value);
+                console.log("Direccion de Entrega:", input2.value);
+            });
+
+            routingControl.on('waypointschanged', function(e) {
+                // Actualizar los campos de entrada con las nuevas direcciones mientras se arrastran los marcadores
+                var waypoints = e.waypoints;
+                if (waypoints.length >= 2) {
+                    input1.value = waypoints[0].name || '';
+                    input2.value = waypoints[waypoints.length - 1].name || '';
+                }
+            });
+
+            var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
+            map.fitBounds(bounds);
+
+            var distancia = marker1.getLatLng().distanceTo(marker2.getLatLng()) / 1000;
+            var precio = calcularPrecio(distancia);
+
+            precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
+        } else {
+            console.error('No se encontraron resultados de geocodificación para ambas direcciones.');
+        }
+    }).catch(error => {
+        console.error('Error al realizar la geocodificación:', error);
+    });
+}
+
+
+            input1.addEventListener('change', updateRoute);
+            input2.addEventListener('change', updateRoute);
+
+            ubicacionActualBtn.addEventListener('click', function() {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+
+                    ubicacionActualInfo.style.display = 'block';
+                    ubicacionActualTexto.textContent = `Latitud: ${lat}, Longitud: ${lon}`;
+
+                    // Realiza la geocodificación inversa para obtener la dirección desde la ubicación actual
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+                        .then(response => response.json())
+                        .then(data => {
+                            var direccion = data.display_name;
+                            input1.value = direccion;
+                            updateRoute();
+                        })
+                        .catch(error => {
+                            console.error('Error al realizar la geocodificación inversa:', error);
+                        });
+                }, function(error) {
+                    console.error('Error al obtener la ubicación actual:', error);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

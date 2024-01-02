@@ -8,16 +8,33 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
 </head>
 <body>
-    <h1>Ruta entre Direcciones</h1>
-    <button id="ubicacionActualBtn">Usar mi ubicación actual como inicio</button>
-    <div id="ubicacionActualInfo" style="display:none;">
-        <p>Ubicación actual:</p>
-        <p id="ubicacionActualTexto"></p>
+    <h2>Calcular valor de un envio</h2>
+   
+
+
+    <div class="input-group ">
+        <button class="input-group-text"id="ubicacionActualBtn"><i class="bi bi-crosshair"></i></button>
+        <div class="form-floating">
+          <input type="text" class="form-control" id="direccionInput1" placeholder="Ingresa dirección de inicio...">
+          <label for="direccionInput1">Dirección de inicio</label>
+        </div>
+      </div>
+
+<div class="input-group ">
+    <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+    <div class="form-floating">
+      <input type="text" class="form-control" id="direccionInput2" placeholder="Ingresa dirección de entrega...">
+      <label for="direccionInput2">Dirección de entrega</label>
     </div>
-    <input type="text" id="direccionInput1" placeholder="Ingresa la primera dirección...">
-    <input type="text" id="direccionInput2" placeholder="Ingresa la segunda dirección...">
+  </div>
+   
     <div id="map" style="height: 300px;"></div>
     <p id="precioCalculado"></p>
 
@@ -29,8 +46,7 @@
             var input1 = document.getElementById('direccionInput1');
             var input2 = document.getElementById('direccionInput2');
             var ubicacionActualBtn = document.getElementById('ubicacionActualBtn');
-            var ubicacionActualInfo = document.getElementById('ubicacionActualInfo');
-            var ubicacionActualTexto = document.getElementById('ubicacionActualTexto');
+
             var precioCalculado = document.getElementById('precioCalculado');
             var routingControl;
             var marker1, marker2;
@@ -91,7 +107,11 @@
                             // Mostrar la distancia y el precio en el párrafo correspondiente
 
                             precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km |Precio calculado: $${precio.toFixed(2)}`;
-                    
+                    // Crear enlace con parámetros codificados
+    var enlace = `${window.location.href}?lat1=${result1.lat}&lon1=${result1.lon}&lat2=${result2.lat}&lon2=${result2.lon}&distancia=${distancia}&precio=${precio}`;
+    console.log('Enlace para compartir:', enlace);
+    console.log("Direccion de Inicio:", input1.value);
+console.log("Direccion de Entrega:",  input2.value);
                         
                         });
 
@@ -104,6 +124,7 @@
                         var precio = calcularPrecio(distancia);
 
                         precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
+                        console.log("1"+result1.display_name);
                         input1.value = result1.display_name;
                         input2.value = result2.display_name;
                     } else {
@@ -122,8 +143,7 @@
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
 
-                    ubicacionActualInfo.style.display = 'block';
-                    ubicacionActualTexto.textContent = `Latitud: ${lat}, Longitud: ${lon}`;
+                  
                     
                     // Realiza la geocodificación inversa para obtener la dirección desde la ubicación actual
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
