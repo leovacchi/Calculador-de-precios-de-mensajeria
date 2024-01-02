@@ -33,15 +33,17 @@
             var ubicacionActualTexto = document.getElementById('ubicacionActualTexto');
             var precioCalculado = document.getElementById('precioCalculado');
             var routingControl;
-            var marker1, marker2;
 
-            function addMarker(lat, lon, draggable = false) {
-                return L.marker([lat, lon], { draggable: draggable }).addTo(map);
+            function addMarker(lat, lon) {
+                return L.marker([lat, lon]).addTo(map);
             }
 
             function calcularPrecio(distancia) {
+                // Cada 2 kilómetros cobra $1000 como mínimo
                 var precioMinimo = 1000;
-                var precioProporcional = Math.max(0, (distancia - 3) * 500);
+                // Precio proporcional por kilómetro
+                var precioProporcional = Math.max(0, (distancia - 2) * 500); // Asume $500 por kilómetro adicional
+
                 return precioMinimo + precioProporcional;
             }
 
@@ -49,6 +51,7 @@
                 var direccion1 = input1.value;
                 var direccion2 = input2.value;
 
+                // Realiza la geocodificación utilizando la API de Nominatim para ambas direcciones
                 Promise.all([
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
@@ -57,18 +60,14 @@
                     var result2 = data[1][0];
 
                     if (result1 && result2) {
-                        if (marker1) {
-                            map.removeLayer(marker1);
-                        }
-                        if (marker2) {
-                            map.removeLayer(marker2);
-                        }
+                        // Crea marcadores para ambas direcciones
+                        var marker1 = addMarker(result1.lat, result1.lon);
+                        var marker2 = addMarker(result2.lat, result2.lon);
 
-                        marker1 = addMarker(result1.lat, result1.lon, true);
-                        marker2 = addMarker(result2.lat, result2.lon, true);
-
+                        // Añade la capa de enrutamiento
                         if (routingControl) {
                             map.removeControl(routingControl);
+                            console.log('moves el marcador');
                         }
 
                         routingControl = L.Routing.control({
@@ -79,33 +78,37 @@
                             routeWhileDragging: true
                         }).addTo(map);
 
+                        // Escucha el evento de cambio de ruta para recalcular el precio
                         routingControl.on('routeselected', function(e) {
-                            if (marker1) {
-                                map.removeLayer(marker1);
-                            }
-                            if (marker2) {
-                                map.removeLayer(marker2);
-                            }
-                            var distancia = e.route.summary.totalDistance / 1000;
+                                               // Elimina los marcadores anteriores a la nueva ruta si existen
+                    if (marker1) {
+                        map.removeLayer(marker1);
+                    }
+                    if (marker2) {
+                        map.removeLayer(marker2);
+                    }
+                            var distancia = e.route.summary.totalDistance / 1000; // en kilómetros
                             var precio = calcularPrecio(distancia);
-                            // Mostrar la distancia y el precio en el párrafo correspondiente
-
-                            precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km |Precio calculado: $${precio.toFixed(2)}`;
-                    
-                        
+                            precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
+                            console.log('Ruta seleccionada, recalculando precio');
+                            
+                            
                         });
 
-                     
+                        
 
+                        // Ajusta la vista del mapa para mostrar ambas direcciones y la ruta
                         var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
                         map.fitBounds(bounds);
 
-                        var distancia = marker1.getLatLng().distanceTo(marker2.getLatLng()) / 1000;
+                        // Calcula la distancia entre las dos direcciones
+                        var distancia = marker1.getLatLng().distanceTo(marker2.getLatLng()) / 1000; // en kilómetros
+
+                        // Calcula el precio basado en la distancia
                         var precio = calcularPrecio(distancia);
 
+                        // Muestra el precio calculado
                         precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
-                        input1.value = result1.display_name;
-                        input2.value = result2.display_name;
                     } else {
                         console.error('No se encontraron resultados de geocodificación para ambas direcciones.');
                     }
@@ -114,9 +117,11 @@
                 });
             }
 
+            // Escucha cambios en ambas direcciones para actualizar la ruta
             input1.addEventListener('change', updateRoute);
             input2.addEventListener('change', updateRoute);
 
+            // Maneja el botón para usar la ubicación actual
             ubicacionActualBtn.addEventListener('click', function() {
                 navigator.geolocation.getCurrentPosition(function(position) {
                     var lat = position.coords.latitude;
@@ -124,25 +129,13 @@
 
                     ubicacionActualInfo.style.display = 'block';
                     ubicacionActualTexto.textContent = `Latitud: ${lat}, Longitud: ${lon}`;
-                    
-                    // Realiza la geocodificación inversa para obtener la dirección desde la ubicación actual
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
-                        .then(response => response.json())
-                        .then(data => {
-                            var direccion = data.display_name;
-                            input1.value = direccion;
-                            updateRoute();
-                        })
-                        .catch(error => {
-                            console.error('Error al realizar la geocodificación inversa:', error);
-                        });
+                    input1.value = `${lat}, ${lon}`;
+                    updateRoute();
                 }, function(error) {
                     console.error('Error al obtener la ubicación actual:', error);
                 });
             });
-            
         });
     </script>
-    
 </body>
 </html>

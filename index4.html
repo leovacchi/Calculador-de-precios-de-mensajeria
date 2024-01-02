@@ -41,7 +41,7 @@
 
             function calcularPrecio(distancia) {
                 var precioMinimo = 1000;
-                var precioProporcional = Math.max(0, (distancia - 3) * 500);
+                var precioProporcional = Math.max(0, (distancia - 2) * 500);
                 return precioMinimo + precioProporcional;
             }
 
@@ -88,14 +88,20 @@
                             }
                             var distancia = e.route.summary.totalDistance / 1000;
                             var precio = calcularPrecio(distancia);
-                            // Mostrar la distancia y el precio en el párrafo correspondiente
-
-                            precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km |Precio calculado: $${precio.toFixed(2)}`;
-                    
-                        
+                            precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
                         });
 
-                     
+                        marker1.on('dragend', function() {
+                            var latlng = marker1.getLatLng();
+                            input1.value = `${latlng.lat}, ${latlng.lng}`;
+                            updateRoute();
+                        });
+
+                        marker2.on('dragend', function() {
+                            var latlng = marker2.getLatLng();
+                            input2.value = `${latlng.lat}, ${latlng.lng}`;
+                            updateRoute();
+                        });
 
                         var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
                         map.fitBounds(bounds);
@@ -140,9 +146,7 @@
                     console.error('Error al obtener la ubicación actual:', error);
                 });
             });
-            
         });
     </script>
-    
 </body>
 </html>
