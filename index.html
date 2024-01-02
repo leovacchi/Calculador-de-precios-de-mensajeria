@@ -34,9 +34,13 @@
       <label for="direccionInput2">Dirección de entrega</label>
     </div>
   </div>
-   
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end"></div>
+  <button class="btn btn-primary me-md-2" type="button" onclick="updateRoute();">Calcular <i class="bi bi-cursor-fill"></i> </button>
+
+</div>
+<p id="precioCalculado"></p>
     <div id="map" style="height: 300px;"></div>
-    <p id="precioCalculado"></p>
+  
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -57,17 +61,18 @@
 
             function calcularPrecio(distancia) {
                 var precioMinimo = 1000;
-                var precioProporcional = Math.max(0, (distancia - 3) * 500);
+                var precioProporcional = Math.max(0, (distancia - 3) * 400);
                 return precioMinimo + precioProporcional;
             }
 
             function updateRoute() {
                 var direccion1 = input1.value;
                 var direccion2 = input2.value;
+                var ciudad = "";
 
                 Promise.all([
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}, bahia blanca`).then(response => response.json())
                 ]).then(data => {
                     var result1 = data[0][0];
                     var result2 = data[1][0];
@@ -134,8 +139,8 @@ console.log("Direccion de Entrega:",  input2.value);
                     console.error('Error al realizar la geocodificación:', error);
                 });
             }
-
-            input1.addEventListener('change', updateRoute);
+            //detecta cambio en los imputs y ejecuta updateRouter
+            //input1.addEventListener('change', updateRoute);
             input2.addEventListener('change', updateRoute);
 
             ubicacionActualBtn.addEventListener('click', function() {
@@ -151,7 +156,7 @@ console.log("Direccion de Entrega:",  input2.value);
                         .then(data => {
                             var direccion = data.display_name;
                             input1.value = direccion;
-                            updateRoute();
+                            //updateRoute();
                         })
                         .catch(error => {
                             console.error('Error al realizar la geocodificación inversa:', error);
