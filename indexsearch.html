@@ -6,41 +6,44 @@
     <title>Ruta entre Direcciones</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <!-- Agregar al head -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <!-- Autocomplete -->
+    <script src="https://cdn.jsdelivr.net/npm/devbridge-autocomplete@1.4.10/dist/jquery.autocomplete.min.js"></script>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
 </head>
 <body>
-    <h2>Calcular valor de un envio</h2>
+    <h2>Calcular valor de un envío</h2>
    
-
-
-    <div class="input-group ">
-        <button class="input-group-text"id="ubicacionActualBtn"><i class="bi bi-crosshair"></i></button>
+    <div class="input-group">
+        <button class="input-group-text" id="ubicacionActualBtn"><i class="bi bi-crosshair"></i></button>
         <div class="form-floating">
-          <input type="search" class="form-control" id="direccionInput1" placeholder="Ingresa dirección de inicio...">
-          <label for="direccionInput1">Dirección de inicio</label>
+            <input type="text" class="form-control" id="direccionInput1" placeholder="Ingresa dirección de inicio...">
+            <label for="direccionInput1">Dirección de inicio</label>
         </div>
-      </div>
-
-<div class="input-group ">
-    <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
-    <div class="form-floating">
-      <input type="search" class="form-control" id="direccionInput2" placeholder="Ingresa dirección de entrega...">
-      <label for="direccionInput2">Dirección de entrega</label>
     </div>
-  </div>
-  <div class="d-grid gap-2 d-md-flex justify-content-md-end"></div>
-  <button class="btn btn-primary me-md-2" type="button" onclick="updateRoute();">Calcular <i class="bi bi-cursor-fill"></i> </button>
 
-</div>
-<p id="precioCalculado"></p>
+    <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+        <div class="form-floating">
+            <input type="text" class="form-control" id="direccionInput2" placeholder="Ingresa dirección de entrega...">
+            <label for="direccionInput2">Dirección de entrega</label>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end"></div>
+    <button class="btn btn-primary me-md-2" type="button" onclick="updateRoute();">Calcular <i class="bi bi-cursor-fill"></i> </button>
+
+    <p id="precioCalculado"></p>
     <div id="map" style="height: 300px;"></div>
-  
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -65,21 +68,40 @@
                 return precioMinimo + precioProporcional;
             }
 
+            function predictAddress(input, callback) {
+                var inputValue = input.value.trim();
+
+                if (inputValue === "") {
+                    return;
+                }
+
+                var accessToken = 'pk.eyJ1IjoiZGVsaXNlciIsImEiOiJjanBhZjA2bjEwNDdtM2tvZjNkcDJwc3J4In0.-8RgNqRhSKyrbcWHruaSLg'; // Reemplaza con tu clave de acceso de Mapbox
+
+                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${inputValue}.json?access_token=${accessToken}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var predictions = data.features.map(feature => {
+                            return {
+                                text: feature.place_name,
+                                value: [feature.center[1], feature.center[0]] // [lat, lon]
+                            };
+                        });
+
+                        callback(predictions);
+                    })
+                    .catch(error => {
+                        console.error('Error al predecir la dirección:', error);
+                    });
+            }
+
             function updateRoute() {
                 var direccion1 = input1.value;
                 var direccion2 = input2.value;
-                 // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
-                     if (!direccion1.toLowerCase().includes("bahía blanca")) {
-                      direccion1 += ", Bahía Blanca";
-                     }
-                 // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
-                      if (!direccion2.toLowerCase().includes("bahía blanca")) {
-                      direccion2 += ", Bahía Blanca";
-                     }
+                var ciudad = "";
 
                 Promise.all([
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}, bahia blanca`).then(response => response.json())
                 ]).then(data => {
                     var result1 = data[0][0];
                     var result2 = data[1][0];
@@ -116,18 +138,13 @@
                             }
                             var distancia = e.route.summary.totalDistance / 1000;
                             var precio = calcularPrecio(distancia);
-                            // Mostrar la distancia y el precio en el párrafo correspondiente
 
-                            precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km |Precio calculado: $${precio.toFixed(2)}`;
-                    // Crear enlace con parámetros codificados
-    var enlace = `${window.location.href}?lat1=${result1.lat}&lon1=${result1.lon}&lat2=${result2.lat}&lon2=${result2.lon}&distancia=${distancia}&precio=${precio}`;
-    console.log('Enlace para compartir:', enlace);
-    console.log("Direccion de Inicio:", input1.value);
-console.log("Direccion de Entrega:",  input2.value);
-                        
+                            precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km | Precio calculado: $${precio.toFixed(2)}`;
+                            var enlace = `${window.location.href}?lat1=${result1.lat}&lon1=${result1.lon}&lat2=${result2.lat}&lon2=${result2.lon}&distancia=${distancia}&precio=${precio}`;
+                            console.log('Enlace para compartir:', enlace);
+                            console.log("Direccion de Inicio:", input1.value);
+                            console.log("Direccion de Entrega:", input2.value);
                         });
-
-                     
 
                         var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
                         map.fitBounds(bounds);
@@ -136,9 +153,29 @@ console.log("Direccion de Entrega:",  input2.value);
                         var precio = calcularPrecio(distancia);
 
                         precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
-                        console.log("1"+result1.display_name);
                         input1.value = result1.display_name;
                         input2.value = result2.display_name;
+
+                        // Añadir la predicción de direcciones para input1
+                        predictAddress(input1, function(predictions) {
+                            var autocompleteOptions = {
+                                data: predictions,
+                                getValue: "text",
+                                list: {
+                                    maxNumberOfElements: 5,
+                                    match: {
+                                        enabled: true
+                                    },
+                                    onClickEvent: function() {
+                                        var selectedValue = input1.getSelectedItemData().value;
+                                        input1.value = selectedValue;
+                                        updateRoute();
+                                    }
+                                }
+                            };
+
+                            $(input1).autocomplete(autocompleteOptions);
+                        });
                     } else {
                         console.error('No se encontraron resultados de geocodificación para ambas direcciones.');
                     }
@@ -146,8 +183,7 @@ console.log("Direccion de Entrega:",  input2.value);
                     console.error('Error al realizar la geocodificación:', error);
                 });
             }
-            //detecta cambio en los imputs y ejecuta updateRouter
-            //input1.addEventListener('change', updateRoute);
+
             input2.addEventListener('change', updateRoute);
 
             ubicacionActualBtn.addEventListener('click', function() {
@@ -155,15 +191,12 @@ console.log("Direccion de Entrega:",  input2.value);
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
 
-                  
-                    
-                    // Realiza la geocodificación inversa para obtener la dirección desde la ubicación actual
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
                         .then(response => response.json())
                         .then(data => {
                             var direccion = data.display_name;
                             input1.value = direccion;
-                            //updateRoute();
+                            updateRoute();
                         })
                         .catch(error => {
                             console.error('Error al realizar la geocodificación inversa:', error);
@@ -172,9 +205,7 @@ console.log("Direccion de Entrega:",  input2.value);
                     console.error('Error al obtener la ubicación actual:', error);
                 });
             });
-            
         });
     </script>
-    
 </body>
 </html>

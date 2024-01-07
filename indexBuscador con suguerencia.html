@@ -22,7 +22,7 @@
     <div class="input-group ">
         <button class="input-group-text"id="ubicacionActualBtn"><i class="bi bi-crosshair"></i></button>
         <div class="form-floating">
-          <input type="search" class="form-control" id="direccionInput1" placeholder="Ingresa dirección de inicio...">
+          <input type="text" class="form-control" id="direccionInput1" placeholder="Ingresa dirección de inicio...">
           <label for="direccionInput1">Dirección de inicio</label>
         </div>
       </div>
@@ -30,7 +30,7 @@
 <div class="input-group ">
     <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
     <div class="form-floating">
-      <input type="search" class="form-control" id="direccionInput2" placeholder="Ingresa dirección de entrega...">
+      <input type="text" class="form-control" id="direccionInput2" placeholder="Ingresa dirección de entrega...">
       <label for="direccionInput2">Dirección de entrega</label>
     </div>
   </div>
@@ -66,23 +66,32 @@
             }
 
             function updateRoute() {
+
+
+                
                 var direccion1 = input1.value;
                 var direccion2 = input2.value;
-                 // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
-                     if (!direccion1.toLowerCase().includes("bahía blanca")) {
-                      direccion1 += ", Bahía Blanca";
-                     }
-                 // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
-                      if (!direccion2.toLowerCase().includes("bahía blanca")) {
-                      direccion2 += ", Bahía Blanca";
-                     }
+            // Verificar si la dirección1 ya contiene "Bahía Blanca"
+    if (!direccion1.toLowerCase().includes("bahía blanca")) {
+        // Si no contiene "Bahía Blanca", agrégalo
+        direccion1 += ", Bahía Blanca";
+    }
+
+    // Verificar si la dirección2 ya contiene "Bahía Blanca"
+    if (!direccion2.toLowerCase().includes("bahía blanca")) {
+        // Si no contiene "Bahía Blanca", agrégalo
+        console.log("NO CONTIENE LA PALABRA BAHIA BLANCA")
+        direccion2 += ", Bahía Blanca";
+    }
 
                 Promise.all([
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
                     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
                 ]).then(data => {
                     var result1 = data[0][0];
+                
                     var result2 = data[1][0];
+                    console.log(data);
 
                     if (result1 && result2) {
                         if (marker1) {
