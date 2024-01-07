@@ -104,7 +104,8 @@
                                 L.latLng(result1.lat, result1.lon),
                                 L.latLng(result2.lat, result2.lon)
                             ],
-                            routeWhileDragging: true
+                            routeWhileDragging: true,
+                            show: false
                         }).addTo(map);
 
                         routingControl.on('routeselected', function(e) {
