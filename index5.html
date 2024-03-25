@@ -52,18 +52,22 @@
 
     <script>
 
-async function capturarYCompartir() {
-            var canvas = await html2canvas(document.body);
-            var enlaceDescarga = document.createElement('a');
-            enlaceDescarga.href = canvas.toDataURL('image/png');
-            enlaceDescarga.download = 'captura.png';
-            enlaceDescarga.style.display = 'none';
-            document.body.appendChild(enlaceDescarga);
-            enlaceDescarga.click();
-            document.body.removeChild(enlaceDescarga);
 
-            var whatsappUrl = 'https://wa.me/?text=¡Mira esta captura de pantalla!';
-       
+function capturarYCompartir() {
+            html2canvas(document.body).then(canvas => {
+                var enlaceDescarga = document.createElement('a');
+                enlaceDescarga.href = canvas.toDataURL('image/png');
+                enlaceDescarga.download = 'captura.png';
+                enlaceDescarga.style.display = 'none';
+                document.body.appendChild(enlaceDescarga);
+                enlaceDescarga.click();
+                document.body.removeChild(enlaceDescarga);
+
+                var whatsappUrl = 'https://wa.me/?text=¡Mira esta captura de pantalla!';
+                window.open(whatsappUrl, '_blank');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
 
 
