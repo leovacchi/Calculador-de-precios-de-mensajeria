@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta entre Direcciones</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <h2>Calcular valor de un envio</h2>
+   
+
+
+    <div class="input-group ">
+        <button class="input-group-text"id="ubicacionActualBtn"><i class="bi bi-crosshair"></i></button>
+        <div class="form-floating">
+          <input type="search" class="form-control" id="direccionInput1" placeholder="Ingresa dirección de inicio...">
+          <label for="direccionInput1">Dirección de inicio</label>
+        </div>
+      </div>
+
+<div class="input-group ">
+    <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+    <div class="form-floating">
+      <input type="search" class="form-control" id="direccionInput2" placeholder="Ingresa dirección de entrega...">
+      <label for="direccionInput2">Dirección de entrega</label>
+    </div>
+  </div>
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end"></div>
+  <button class="btn btn-primary me-md-2" type="button" onclick="updateRoute();">Calcular <i class="bi bi-cursor-fill"></i> </button>
+
+</div>
+<p id="precioCalculado"></p>
+    <div id="map" style="height: 300px;"></div>
+  
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('map').setView([0, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            var input1 = document.getElementById('direccionInput1');
+            var input2 = document.getElementById('direccionInput2');
+            var ubicacionActualBtn = document.getElementById('ubicacionActualBtn');
+
+            var precioCalculado = document.getElementById('precioCalculado');
+            var routingControl;
+            var marker1, marker2;
+
+            function addMarker(lat, lon, draggable = false) {
+                return L.marker([lat, lon], { draggable: draggable }).addTo(map);
+            }
+
+            function calcularPrecio(distancia) {
+                var precioMinimo = 1000;
+                var precioProporcional = Math.max(0, (distancia - 3) * 400);
+                return precioMinimo + precioProporcional;
+            }
+
+            function updateRoute() {
+                var direccion1 = input1.value;
+                var direccion2 = input2.value;
+                 // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
+                     if (!direccion1.toLowerCase().includes("bahía blanca")) {
+                      direccion1 += ", Bahía Blanca";
+                     }
+                 // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
+                      if (!direccion2.toLowerCase().includes("bahía blanca")) {
+                      direccion2 += ", Bahía Blanca";
+                     }
+
+                Promise.all([
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion1}`).then(response => response.json()),
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${direccion2}`).then(response => response.json())
+                ]).then(data => {
+                    var result1 = data[0][0];
+                    var result2 = data[1][0];
+
+                    if (result1 && result2) {
+                        if (marker1) {
+                            map.removeLayer(marker1);
+                        }
+                        if (marker2) {
+                            map.removeLayer(marker2);
+                        }
+
+                        marker1 = addMarker(result1.lat, result1.lon, true);
+                        marker2 = addMarker(result2.lat, result2.lon, true);
+
+                        if (routingControl) {
+                            map.removeControl(routingControl);
+                        }
+
+                        routingControl = L.Routing.control({
+                            waypoints: [
+                                L.latLng(result1.lat, result1.lon),
+                                L.latLng(result2.lat, result2.lon)
+                            ],
+                            routeWhileDragging: true,
+                            show: false
+                        }).addTo(map);
+
+                        routingControl.on('routeselected', function(e) {
+                            if (marker1) {
+                                map.removeLayer(marker1);
+                            }
+                            if (marker2) {
+                                map.removeLayer(marker2);
+                            }
+                            var distancia = e.route.summary.totalDistance / 1000;
+                            var precio = calcularPrecio(distancia);
+                            // Mostrar la distancia y el precio en el párrafo correspondiente
+
+                            precioCalculado.textContent = `Distancia: ${distancia.toFixed(2)} km |Precio calculado: $${precio.toFixed(2)}`;
+                    // Crear enlace con parámetros codificados
+    var enlace = `${window.location.href}?lat1=${result1.lat}&lon1=${result1.lon}&lat2=${result2.lat}&lon2=${result2.lon}&distancia=${distancia}&precio=${precio}`;
+    console.log('Enlace para compartir:', enlace);
+    console.log("Direccion de Inicio:", input1.value);
+console.log("Direccion de Entrega:",  input2.value);
+                        
+                        });
+
+                     
+
+                        var bounds = L.latLngBounds(marker1.getLatLng(), marker2.getLatLng());
+                        map.fitBounds(bounds);
+
+                        var distancia = marker1.getLatLng().distanceTo(marker2.getLatLng()) / 1000;
+                        var precio = calcularPrecio(distancia);
+
+                        precioCalculado.textContent = `Precio calculado: $${precio.toFixed(2)}`;
+                        console.log("1"+result1.display_name);
+                        input1.value = result1.display_name;
+                        input2.value = result2.display_name;
+                    } else {
+                            // Mostrar un mensaje de error en la interfaz
+                            precioCalculado.textContent = 'No se encontraron resultados de geocodificación para ambas direcciones.';
+
+                            console.error('No se encontraron resultados de geocodificación para ambas direcciones.');
+                        }
+                }).catch(error => {
+                    console.error('Error al realizar la geocodificación:', error);
+                });
+            }
+            //detecta cambio en los imputs y ejecuta updateRouter
+            //input1.addEventListener('change', updateRoute);
+            input2.addEventListener('change', updateRoute);
+
+            ubicacionActualBtn.addEventListener('click', function() {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+
+                  
+                    
+                    // Realiza la geocodificación inversa para obtener la dirección desde la ubicación actual
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+                        .then(response => response.json())
+                        .then(data => {
+                            var direccion = data.display_name;
+                            input1.value = direccion;
+                            //updateRoute();
+                        })
+                        .catch(error => {
+                            console.error('Error al realizar la geocodificación inversa:', error);
+                        });
+                }, function(error) {
+                    console.error('Error al obtener la ubicación actual:', error);
+                });
+            });
+            
+        });
+    </script>
+    
+</body>
+</html>
