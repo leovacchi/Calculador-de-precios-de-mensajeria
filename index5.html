@@ -16,7 +16,9 @@
 </head>
 <body>
     <h2>Calcular valor de un envio</h2>
-   
+    <div id="cargando" style="display: none;">
+        <i class="bi bi-arrow-repeat"></i> Cargando...
+    </div>
 
 
     <div class="input-group ">
@@ -44,6 +46,18 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+            var cargando = document.getElementById('cargando');
+    
+            function mostrarCargando() {
+            cargando.style.display = 'block';
+            } 
+
+            function ocultarCargando() {
+            cargando.style.display = 'none';
+            }
+
+
             var map = L.map('map').setView([0, 0], 2);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -66,6 +80,7 @@
             }
 
             function updateRoute() {
+                mostrarCargando();
                 var direccion1 = input1.value;
                 var direccion2 = input2.value;
                  // Verificar y agregar "Bahía Blanca" a la dirección1 si no está presente
@@ -140,14 +155,17 @@ console.log("Direccion de Entrega:",  input2.value);
                         console.log("1"+result1.display_name);
                         input1.value = result1.display_name;
                         input2.value = result2.display_name;
+                        ocultarCargando();
                     } else {
                             // Mostrar un mensaje de error en la interfaz
                             precioCalculado.textContent = 'No se encontraron resultados de geocodificación para ambas direcciones.';
 
                             console.error('No se encontraron resultados de geocodificación para ambas direcciones.');
+                            ocultarCargando();
                         }
                 }).catch(error => {
                     console.error('Error al realizar la geocodificación:', error);
+                    ocultarCargando();
                 });
             }
             //detecta cambio en los imputs y ejecuta updateRouter
